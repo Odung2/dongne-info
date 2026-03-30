@@ -36,7 +36,7 @@ func NewEmailService(apiKey string) *EmailService {
 	}
 	return &EmailService{
 		apiKey: apiKey,
-		from:   "onboarding@resend.dev", // 도메인 연결 후 "동네정보 <noreply@dongne.info>"로 변경
+		from:   "onboarding@resend.dev", // 도메인 연결 후 "곰고 <noreply@gomgo.kr>"로 변경
 	}
 }
 
@@ -51,14 +51,14 @@ type resendRequest struct {
 // SendAnnouncementEmail 은 공고 요약 이메일을 발송한다.
 //
 // 이메일 내용:
-//   - 제목: "[동네정보] 사업명"
+//   - 제목: "[곰고] 사업명"
 //   - 본문: AI 요약 + 진행 단계 + 나한테 어떤 의미 + 추천 액션
 //
 // 파라미터:
 //   - to: 수신자 이메일 주소
 //   - a: 공고 데이터 (요약 포함)
 func (s *EmailService) SendAnnouncementEmail(to string, a *model.Announcement) error {
-	subject := fmt.Sprintf("[동네정보] %s", a.Title)
+	subject := fmt.Sprintf("[곰고] %s", a.Title)
 	html := buildEmailHTML(a)
 
 	reqBody := resendRequest{
@@ -146,7 +146,7 @@ func buildEmailHTML(a *model.Announcement) string {
 		%s
 		<hr style="border:none;border-top:1px solid #E5E7EB;margin:16px 0;">
 		<p style="margin:0;font-size:12px;color:#9CA3AF;text-align:center;">
-			동네정보 — 우리 동네 공고, 쉽게 알려드려요
+			곰고 — 우리 동네 소식, 쉽게 알려줘요 🐻
 		</p>
 	</div>
 </div>

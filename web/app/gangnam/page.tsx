@@ -10,8 +10,8 @@ import AnnouncementList from "@/components/announcement/AnnouncementList";
 import SubscribeForm from "@/components/subscribe/SubscribeForm";
 
 export const metadata: Metadata = {
-  title: "강남구 공고 — 동네정보",
-  description: "강남구 재개발·재건축·도시계획 공고를 AI가 쉽게 설명해드려요.",
+  title: "강남구 공고 — 곰고",
+  description: "강남구 재개발·재건축·도시계획 소식을 곰고가 쉽게 알려줘요.",
 };
 
 export default async function GangnamPage() {

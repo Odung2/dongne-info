@@ -4,9 +4,9 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
-  title: "동네정보 — 우리 동네 행정 공고, 쉽게 알려드려요",
+  title: "곰고 — 우리 동네 소식, 쉽게 알려줘요 🐻",
   description:
-    "서울시 강남구·마포구의 재개발·재건축·도시계획 공고를 AI가 쉽게 설명해드려요.",
+    "우리 동네 재개발·재건축·도시계획 소식을 곰고가 쉽게 알려줘요.",
 };
 
 export default function RootLayout({
