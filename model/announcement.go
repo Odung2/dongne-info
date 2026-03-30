@@ -14,7 +14,8 @@ import (
 //   - District: 서울시 자치구명 ("강남구", "마포구" 등)
 //   - Type: 공고 유형. API의 SCLSF(소분류)에서 분류 ("재개발", "재건축", "정비사업")
 //   - Action: 조치 유형. API의 RPT_TYPE 원본 ("신설", "변경", "폐지")
-//   - Title: 사업명. API의 RGN_NM (예: "은마아파트 재건축 정비구역")
+//   - Title: 원본 사업명. API의 RGN_NM (예: "은마아파트 재건축 정비구역"). 상세 페이지 하단에 표시.
+//   - EasyTitle: AI가 생성한 쉬운 제목 (예: "대치동 은마아파트 재건축 시작돼요"). 카드/알림에 사용.
 //   - Location: 위치/주소. API의 PSTN_NM (예: "강남구 대치동 316번지 일대")
 //   - Summary: Claude API가 생성한 쉬운 설명 (nil이면 아직 요약되지 않음)
 //   - Stage: 재건축 진행 단계 (예: "2/7단계 - 정비구역지정", nil이면 미분류)
@@ -33,6 +34,7 @@ type Announcement struct {
 	Type       string     `db:"type" json:"type"`
 	Action     string     `db:"action" json:"action"`
 	Title      string     `db:"title" json:"title"`
+	EasyTitle  *string    `db:"easy_title" json:"easy_title,omitempty"`
 	Location   *string    `db:"location" json:"location,omitempty"`
 	Summary    *string    `db:"summary" json:"summary,omitempty"`
 	Stage      *string    `db:"stage" json:"stage,omitempty"`

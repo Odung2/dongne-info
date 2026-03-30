@@ -45,6 +45,7 @@ func NewSummaryService(apiKey string, repo *repository.AnnouncementRepository) *
 // summaryResponse 는 Claude API 응답을 파싱하기 위한 내부 구조체.
 // 모든 유형의 프롬프트가 동일한 JSON 구조로 응답하도록 설계.
 type summaryResponse struct {
+	EasyTitle string `json:"easy_title"` // 쉬운 제목 1줄 (카드/알림용)
 	Summary   string `json:"summary"`    // 쉬운 설명 2~3문장
 	Stage     string `json:"stage"`      // 진행 단계
 	Related   string `json:"related"`    // 관련 사례 (없으면 빈 문자열)
@@ -78,6 +79,7 @@ func (s *SummaryService) SummarizeUnsummarized(ctx context.Context, limit int) (
 		}
 
 		data := repository.SummaryData{
+			EasyTitle: result.EasyTitle,
 			Summary:   result.Summary,
 			Stage:     result.Stage,
 			Related:   result.Related,
@@ -154,14 +156,15 @@ func (s *SummaryService) buildRebuildPrompt(a *model.Announcement) (string, stri
 	system := "서울시 재개발/재건축 공고를 동네 주민이 바로 이해할 수 있게 설명해줘.\n\n" +
 		"규칙:\n" +
 		"1. 해요체 사용.\n" +
-		"2. summary: 2~3문장. 사업명과 위치를 꼭 포함. 행정 용어는 쉬운 말로.\n" +
-		"3. stage: 재개발/재건축 7단계(①기본계획 ②정비구역지정 ③조합설립 ④사업시행인가 ⑤관리처분인가 ⑥착공 ⑦입주) 중 판별 가능하면 \"N/7단계 - 단계명\". 불가능하면 \"확인 필요\".\n" +
-		"4. impact: 이 근처 거주자에게 어떤 의미인지 1문장. 예측 금지, 팩트만.\n" +
-		"5. action_tip: 주민이 할 수 있는 행동 1문장. 구체적으로.\n" +
-		"6. related: 같은 지역의 관련 사례를 알면 쓰고, 모르면 빈 문자열. 지어내지 마.\n" +
-		"7. 집값 예측 절대 금지.\n\n" +
+		"2. easy_title: 15자 이내 쉬운 제목. 동네명 + 핵심 변화. 예: \"공덕동 재개발 구역 넓어졌어요\", \"은마아파트 재건축 시작돼요\"\n" +
+		"3. summary: 2~3문장. 사업명과 위치를 꼭 포함. 행정 용어는 쉬운 말로.\n" +
+		"4. stage: 재개발/재건축 7단계(①기본계획 ②정비구역지정 ③조합설립 ④사업시행인가 ⑤관리처분인가 ⑥착공 ⑦입주) 중 판별 가능하면 \"N/7단계 - 단계명\". 불가능하면 \"확인 필요\".\n" +
+		"5. impact: 이 근처 거주자라면 왜 관심 가져야 하는지 1문장. \"~라면 확인해보세요\" 형태. 예측 금지.\n" +
+		"6. action_tip: 주민이 할 수 있는 행동 1문장. 구체적으로.\n" +
+		"7. related: 같은 지역의 관련 사례를 알면 쓰고, 모르면 빈 문자열. 지어내지 마.\n" +
+		"8. 집값 예측 절대 금지.\n\n" +
 		"순수 JSON만 응답. 마크다운/추가설명 금지.\n" +
-		"{\"summary\":\"\",\"stage\":\"\",\"impact\":\"\",\"action_tip\":\"\",\"related\":\"\"}"
+		"{\"easy_title\":\"\",\"summary\":\"\",\"stage\":\"\",\"impact\":\"\",\"action_tip\":\"\",\"related\":\"\"}"
 
 	location := ptrOr(a.Location, "")
 	rawCategory := ptrOr(a.RawCategory, "")
@@ -187,14 +190,15 @@ func (s *SummaryService) buildCityplanPrompt(a *model.Announcement) (string, str
 	system := "서울시 도시계획 결정고시를 동네 주민이 바로 이해할 수 있게 설명해줘.\n\n" +
 		"규칙:\n" +
 		"1. 해요체 사용.\n" +
-		"2. summary: 2~3문장. 뭘 하겠다는 건지, 어디서, 주민에게 어떤 의미인지 핵심만. 법령 인용/고시번호는 전부 생략.\n" +
-		"3. stage: 도시계획 5단계(①입안 ②주민열람/공고 ③위원회심의 ④결정고시 ⑤지형도면고시) 중 판별 가능하면 \"N/5단계 - 단계명\". 불가능하면 \"확인 필요\".\n" +
-		"4. impact: 이 근처 거주자/상인에게 어떤 영향이 있는지 1문장. 예측 금지, 팩트만.\n" +
-		"5. action_tip: 주민이 할 수 있는 행동 1문장. 열람/의견제출 기간이 있으면 꼭 언급.\n" +
-		"6. related: 같은 지역의 관련 사례를 알면 쓰고, 모르면 빈 문자열. 지어내지 마.\n" +
-		"7. 집값 예측 절대 금지. 법률 조항 인용 금지. 고시번호 언급 금지.\n\n" +
+		"2. easy_title: 15자 이내 쉬운 제목. 동네명 + 핵심 변화. 예: \"동교동 역세권 개발 확정\", \"공덕동 도로 변경돼요\"\n" +
+		"3. summary: 2~3문장. 뭘 하겠다는 건지, 어디서, 주민에게 어떤 의미인지 핵심만. 법령 인용/고시번호는 전부 생략.\n" +
+		"4. stage: 도시계획 5단계(①입안 ②주민열람/공고 ③위원회심의 ④결정고시 ⑤지형도면고시) 중 판별 가능하면 \"N/5단계 - 단계명\". 불가능하면 \"확인 필요\".\n" +
+		"5. impact: 이 근처 거주자/상인이라면 왜 관심 가져야 하는지 1문장. \"~라면 확인해보세요\" 형태.\n" +
+		"6. action_tip: 주민이 할 수 있는 행동 1문장. 열람/의견제출 기간이 있으면 꼭 언급.\n" +
+		"7. related: 같은 지역의 관련 사례를 알면 쓰고, 모르면 빈 문자열. 지어내지 마.\n" +
+		"8. 집값 예측 절대 금지. 법률 조항 인용 금지. 고시번호 언급 금지.\n\n" +
 		"순수 JSON만 응답. 마크다운/추가설명 금지.\n" +
-		"{\"summary\":\"\",\"stage\":\"\",\"impact\":\"\",\"action_tip\":\"\",\"related\":\"\"}"
+		"{\"easy_title\":\"\",\"summary\":\"\",\"stage\":\"\",\"impact\":\"\",\"action_tip\":\"\",\"related\":\"\"}"
 
 	// 도시계획은 summary에 고시문 전문이 임시 저장되어 있음
 	content := ptrOr(a.Summary, "")
@@ -214,14 +218,15 @@ func (s *SummaryService) buildGeneralPrompt(a *model.Announcement) (string, stri
 	system := "서울시 행정 공고를 동네 주민이 바로 이해할 수 있게 설명해줘.\n\n" +
 		"규칙:\n" +
 		"1. 해요체 사용.\n" +
-		"2. summary: 2~3문장 핵심 요약. 행정 용어는 쉬운 말로.\n" +
-		"3. stage: 진행 단계를 알 수 있으면 표시, 모르면 \"확인 필요\".\n" +
-		"4. impact: 주민에게 어떤 의미인지 1문장.\n" +
-		"5. action_tip: 주민이 할 수 있는 행동 1문장.\n" +
-		"6. related: 관련 사례. 모르면 빈 문자열.\n" +
-		"7. 집값 예측 절대 금지.\n\n" +
+		"2. easy_title: 15자 이내 쉬운 제목. 동네명 + 핵심 변화.\n" +
+		"3. summary: 2~3문장 핵심 요약. 행정 용어는 쉬운 말로.\n" +
+		"4. stage: 진행 단계를 알 수 있으면 표시, 모르면 \"확인 필요\".\n" +
+		"5. impact: 주민에게 어떤 의미인지 1문장. \"~라면 확인해보세요\" 형태.\n" +
+		"6. action_tip: 주민이 할 수 있는 행동 1문장.\n" +
+		"7. related: 관련 사례. 모르면 빈 문자열.\n" +
+		"8. 집값 예측 절대 금지.\n\n" +
 		"순수 JSON만 응답.\n" +
-		"{\"summary\":\"\",\"stage\":\"\",\"impact\":\"\",\"action_tip\":\"\",\"related\":\"\"}"
+		"{\"easy_title\":\"\",\"summary\":\"\",\"stage\":\"\",\"impact\":\"\",\"action_tip\":\"\",\"related\":\"\"}"
 
 	user := fmt.Sprintf("구: %s\n제목: %s\n유형: %s\n조치: %s",
 		a.District, a.Title, a.Type, a.Action)
@@ -272,6 +277,7 @@ func (s *SummaryService) SummarizeOne(ctx context.Context, id string) error {
 	}
 
 	return s.repo.UpdateSummary(ctx, id, repository.SummaryData{
+		EasyTitle: result.EasyTitle,
 		Summary:   result.Summary,
 		Stage:     result.Stage,
 		Related:   result.Related,

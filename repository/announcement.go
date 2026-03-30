@@ -142,10 +142,11 @@ func (r *AnnouncementRepository) ExistsBySourceID(ctx context.Context, sourceID 
 // UpdateSummary에 전달하여 DB에 저장한다.
 // 각 필드는 AI 프롬프트의 JSON 응답과 1:1 매핑.
 type SummaryData struct {
+	EasyTitle string // 쉬운 제목 (예: "공덕동 재개발 구역이 넓어졌어요"). 카드/알림에 사용.
 	Summary   string // 쉬운 설명 2~3문장
 	Stage     string // 진행 단계 (예: "2/7단계 - 정비구역지정")
 	Related   string // 관련 사례 (없으면 빈 문자열)
-	Impact    string // 나한테 어떤 의미? (예: "이 근처 거주자라면 관심 가져볼 만해요")
+	Impact    string // 나한테 어떤 의미? (예: "이 근처 거주자라면 확인해보세요")
 	ActionTip string // 추천 액션 (예: "구청 도시계획과에 문의해보세요")
 }
 
@@ -154,8 +155,8 @@ type SummaryData struct {
 // Claude API로 요약을 생성한 후 호출한다.
 // 크롤링 시점에는 요약이 없고, 별도 프로세스에서 요약을 생성하여 업데이트하는 구조.
 func (r *AnnouncementRepository) UpdateSummary(ctx context.Context, id string, data SummaryData) error {
-	query := `UPDATE announcements SET summary = $1, stage = $2, related = $3, impact = $4, action_tip = $5 WHERE id = $6`
-	result, err := r.db.ExecContext(ctx, query, data.Summary, data.Stage, data.Related, data.Impact, data.ActionTip, id)
+	query := `UPDATE announcements SET easy_title = $1, summary = $2, stage = $3, related = $4, impact = $5, action_tip = $6 WHERE id = $7`
+	result, err := r.db.ExecContext(ctx, query, data.EasyTitle, data.Summary, data.Stage, data.Related, data.Impact, data.ActionTip, id)
 	if err != nil {
 		return fmt.Errorf("요약 업데이트 실패 (id=%s): %w", id, err)
 	}

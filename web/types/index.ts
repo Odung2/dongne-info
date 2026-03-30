@@ -4,7 +4,8 @@ export interface Announcement {
   district: string;        // "강남구", "마포구"
   type: string;            // "재개발", "재건축", "도시계획"
   action: string;          // "신설", "변경", "폐지"
-  title: string;           // 사업명 (API의 RGN_NM)
+  title: string;           // 원본 사업명 (API의 RGN_NM)
+  easy_title?: string;     // AI가 만든 쉬운 제목 (카드/알림용)
   location?: string;       // 위치 (API의 PSTN_NM)
   summary?: string;        // AI 쉬운 설명
   stage?: string;          // 진행 단계 (예: "2/7단계 - 정비구역지정")

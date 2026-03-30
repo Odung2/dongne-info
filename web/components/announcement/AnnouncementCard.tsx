@@ -8,8 +8,10 @@ interface Props {
 }
 
 // 공고 카드 — 목록 페이지에서 사용. 클릭하면 상세로 이동.
+// easy_title이 있으면 쉬운 제목을 표시하고, impact를 부제로 보여준다.
 export default function AnnouncementCard({ announcement: a, interestCount }: Props) {
   const slug = getDistrictSlug(a.district) || "gangnam";
+  const displayTitle = a.easy_title || a.title;
   const summaryPreview = a.summary
     ? a.summary.length > 80 ? a.summary.slice(0, 80) + "..." : a.summary
     : null;
@@ -23,18 +25,18 @@ export default function AnnouncementCard({ announcement: a, interestCount }: Pro
           <TypeBadge label={a.action} variant="action" />
         </div>
 
-        {/* 사업명 */}
+        {/* 쉬운 제목 */}
         <h3 className="font-semibold text-gray-900 mb-1 leading-snug">
-          {a.title}
+          {displayTitle}
         </h3>
 
-        {/* 위치 */}
-        {a.location && (
-          <p className="text-sm text-gray-500 mb-2">{a.location}</p>
+        {/* 부제: impact (나한테 어떤 의미?) */}
+        {a.impact && (
+          <p className="text-sm text-blue-600 mb-2">{a.impact}</p>
         )}
 
-        {/* AI 요약 미리보기 */}
-        {summaryPreview && (
+        {/* AI 요약 미리보기 (impact 없을 때만) */}
+        {!a.impact && summaryPreview && (
           <p className="text-sm text-gray-600 mb-3 leading-relaxed">
             {summaryPreview}
           </p>

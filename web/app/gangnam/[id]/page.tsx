@@ -57,8 +57,13 @@ export default async function GangnamDetailPage({ params }: PageProps) {
         <TypeBadge label={a.action} variant="action" />
       </div>
 
-      {/* 사업명 + 위치 */}
-      <h1 className="text-xl font-bold text-gray-900 mb-1">{a.title}</h1>
+      {/* 쉬운 제목 + 원본 고시명 */}
+      <h1 className="text-xl font-bold text-gray-900 mb-1">
+        {a.easy_title || a.title}
+      </h1>
+      {a.easy_title && (
+        <p className="text-xs text-gray-400 mb-1">원본: {a.title}</p>
+      )}
       {a.location && (
         <p className="text-sm text-gray-500 mb-4">{a.district} {a.location}</p>
       )}
