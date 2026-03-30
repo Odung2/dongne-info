@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!a) return { title: "공고를 찾을 수 없습니다" };
 
   return {
-    title: `${a.title} | 마포구 공고 — 동깨`,
+    title: `${a.title} | 마포구 공고 — 동네깨비`,
     description: a.summary || `${a.district} ${a.title}`,
   };
 }
