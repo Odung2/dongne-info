@@ -1,0 +1,21 @@
+# 환경변수 (API 키, DB URL)
+.env
+.env.local
+
+# OS
+.DS_Store
+
+# Go
+/tmp/
+
+# Next.js
+web/.next/
+web/node_modules/
+web/out/
+
+# IDE
+.vscode/
+.idea/
+
+# Claude
+.claude/
