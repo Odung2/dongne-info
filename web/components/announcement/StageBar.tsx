@@ -1,14 +1,11 @@
+"use client";
+
+import { useState } from "react";
+
 /**
  * StageBar — 재건축/도시계획 진행 상황을 프로그레스 바로 표시.
  *
- * 지원하는 패턴:
- *   - "N/7단계 - ..." → 재개발/재건축 7단계 프로그레스 바
- *   - "N/5단계 - ..." → 도시계획 5단계 프로그레스 바
- *   - "폐지됨" → 폐지 텍스트
- *   - "확인 필요" → 텍스트만
- *   - null/undefined → 렌더링 안 함
- *
- * 각 단계 칸에 호버 시 해당 단계가 뭘 하는 단계인지 설명 툴팁을 보여준다.
+ * 각 단계 칸을 클릭/호버하면 해당 단계 설명이 말풍선으로 표시된다.
  */
 
 interface StageInfo {
@@ -35,9 +32,10 @@ const CITYPLAN_STAGES: StageInfo[] = [
 ];
 
 export default function StageBar({ stage }: { stage?: string | null }) {
+  const [activeIdx, setActiveIdx] = useState<number | null>(null);
+
   if (!stage) return null;
 
-  // 폐지됨
   if (stage === "폐지됨") {
     return (
       <div className="mt-4">
@@ -47,10 +45,8 @@ export default function StageBar({ stage }: { stage?: string | null }) {
     );
   }
 
-  // "N/7단계" 또는 "N/5단계" 패턴 추출
   const match7 = stage.match(/(\d+)\/7단계/);
   const match5 = stage.match(/(\d+)\/5단계/);
-
   const current = match7 ? parseInt(match7[1]) : match5 ? parseInt(match5[1]) : null;
   const stages = match7 ? REBUILD_STAGES : match5 ? CITYPLAN_STAGES : null;
   const total = match7 ? 7 : match5 ? 5 : null;
@@ -68,17 +64,34 @@ export default function StageBar({ stage }: { stage?: string | null }) {
     <div className="mt-4">
       <h3 className="text-sm font-semibold text-gray-700 mb-2">진행 단계</h3>
 
-      {/* 프로그레스 바 — 각 칸에 호버 툴팁 */}
+      {/* 프로그레스 바 */}
       <div className="flex gap-1 mb-2">
         {stages.map((s, i) => (
-          <div
-            key={s.label}
-            className={`h-2 flex-1 rounded-full cursor-help transition-colors ${
-              i < current ? "bg-blue-500" : "bg-gray-200"
-            }`}
-            title={`${i + 1}단계 ${s.label}: ${s.tooltip}`}
-            aria-label={`${i + 1}/${total}단계 ${s.label}`}
-          />
+          <div key={s.label} className="relative flex-1">
+            <button
+              type="button"
+              onClick={() => setActiveIdx(activeIdx === i ? null : i)}
+              onMouseEnter={() => setActiveIdx(i)}
+              onMouseLeave={() => setActiveIdx(null)}
+              className={`w-full h-3 rounded-full cursor-help transition-all ${
+                i < current
+                  ? "bg-blue-500 hover:bg-blue-600"
+                  : i === current - 1
+                  ? "bg-blue-500 hover:bg-blue-600"
+                  : "bg-gray-200 hover:bg-gray-300"
+              }`}
+              aria-label={`${i + 1}/${total}단계 ${s.label}`}
+            />
+            {/* 툴팁 말풍선 */}
+            {activeIdx === i && (
+              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg w-48 text-center z-50 shadow-lg">
+                <span className="font-medium">{i + 1}단계: {s.label}</span>
+                <br />
+                <span className="opacity-80">{s.tooltip}</span>
+                <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
+              </span>
+            )}
+          </div>
         ))}
       </div>
 

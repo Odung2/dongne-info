@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 interface TypeBadgeProps {
   label: string;              // 뱃지에 표시할 텍스트
   variant: "type" | "action"; // type=유형(재개발/재건축), action=조치(신설/변경/폐지)
@@ -17,7 +21,6 @@ const ACTION_COLORS: Record<string, string> = {
   "폐지": "bg-red-100 text-red-700",
 };
 
-/** 뱃지 호버 시 보여줄 설명 툴팁 */
 const TYPE_TOOLTIPS: Record<string, string> = {
   "재개발": "낡은 주거지역을 밀고 새로 짓는 사업이에요",
   "재건축": "기존 아파트를 허물고 새 아파트를 짓는 사업이에요",
@@ -35,20 +38,40 @@ const ACTION_TOOLTIPS: Record<string, string> = {
   "실시": "확정된 계획을 실제로 착공할 수 있게 승인한 거예요",
 };
 
-// 공고 유형/조치를 색상 뱃지로 표시. 호버 시 설명 툴팁.
+// 공고 유형/조치를 색상 뱃지로 표시. 클릭하면 설명 툴팁.
 export default function TypeBadge({ label, variant }: TypeBadgeProps) {
+  const [showTooltip, setShowTooltip] = useState(false);
   const colors = variant === "type" ? TYPE_COLORS : ACTION_COLORS;
   const tooltips = variant === "type" ? TYPE_TOOLTIPS : ACTION_TOOLTIPS;
   const colorClass = colors[label] || "bg-gray-100 text-gray-600";
   const tooltip = tooltips[label] || "";
 
+  if (!tooltip) {
+    return (
+      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${colorClass}`}>
+        {label}
+      </span>
+    );
+  }
+
   return (
-    <span
-      className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium cursor-help ${colorClass}`}
-      title={tooltip}
-      aria-label={tooltip ? `${label}: ${tooltip}` : label}
-    >
-      {label}
+    <span className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setShowTooltip(!showTooltip)}
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        className={`px-2 py-0.5 rounded-full text-xs font-medium cursor-help ${colorClass}`}
+        aria-label={`${label}: ${tooltip}`}
+      >
+        {label}
+      </button>
+      {showTooltip && (
+        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap z-50 shadow-lg">
+          {tooltip}
+          <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
+        </span>
+      )}
     </span>
   );
 }
