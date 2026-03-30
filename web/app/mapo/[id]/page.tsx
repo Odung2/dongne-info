@@ -11,6 +11,7 @@ import { fetchAnnouncement, fetchReactions } from "@/lib/api";
 import TypeBadge from "@/components/announcement/TypeBadge";
 import StageBar from "@/components/announcement/StageBar";
 import AreaChange from "@/components/announcement/AreaChange";
+import SourceLink from "@/components/announcement/SourceLink";
 import InterestButton from "@/components/reaction/InterestButton";
 import SubscribeForm from "@/components/subscribe/SubscribeForm";
 
@@ -97,17 +98,8 @@ export default async function MapoDetailPage({ params }: PageProps) {
 
       <div className="mt-4 space-y-2 text-xs text-gray-400">
         {a.raw_category && <p>분류: {a.raw_category}</p>}
-        {a.source_url && (
-          <a
-            href={a.source_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 hover:underline block"
-          >
-            원문 보기 →
-          </a>
-        )}
       </div>
+      <SourceLink sourceUrl={a.source_url} />
 
       <div className="mt-6">
         <SubscribeForm district="마포구" />

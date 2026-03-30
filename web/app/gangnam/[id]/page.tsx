@@ -9,6 +9,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { fetchAnnouncement, fetchReactions } from "@/lib/api";
 import TypeBadge from "@/components/announcement/TypeBadge";
+import SourceLink from "@/components/announcement/SourceLink";
 import StageBar from "@/components/announcement/StageBar";
 import AreaChange from "@/components/announcement/AreaChange";
 import InterestButton from "@/components/reaction/InterestButton";
@@ -106,17 +107,8 @@ export default async function GangnamDetailPage({ params }: PageProps) {
       {/* 원문/분류 */}
       <div className="mt-4 space-y-2 text-xs text-gray-400">
         {a.raw_category && <p>분류: {a.raw_category}</p>}
-        {a.source_url && (
-          <a
-            href={a.source_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 hover:underline block"
-          >
-            원문 보기 →
-          </a>
-        )}
       </div>
+      <SourceLink sourceUrl={a.source_url} />
 
       {/* 구독 */}
       <div className="mt-6">
