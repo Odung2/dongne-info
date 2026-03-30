@@ -19,6 +19,8 @@ import (
 //   - Summary: Claude API가 생성한 쉬운 설명 (nil이면 아직 요약되지 않음)
 //   - Stage: 재건축 진행 단계 (예: "2/7단계 - 정비구역지정", nil이면 미분류)
 //   - Related: 관련 과거 사례. AI가 모르면 빈 문자열 (hallucination 방지)
+//   - Impact: "나한테 어떤 의미?" — 이 근처 거주자에게 어떤 영향이 있는지 (예측 아닌 팩트)
+//   - ActionTip: "뭘 하면 좋을까?" — 추천 액션 (예: "구청에 문의해보세요")
 //   - RawCategory: 원본 API의 대/중/소분류 (예: "의제처리구역 > 정비구역 > 재건축사업구역")
 //   - AreaBefore: 기존 면적(㎡). API의 AREA_EXS (예: "179794.9", 신설이면 "0")
 //   - AreaAfter: 변경 후 면적(㎡). API의 AREA_CHG_AFTR (예: "181501.5")
@@ -35,6 +37,8 @@ type Announcement struct {
 	Summary    *string    `db:"summary" json:"summary,omitempty"`
 	Stage      *string    `db:"stage" json:"stage,omitempty"`
 	Related    *string    `db:"related" json:"related,omitempty"`
+	Impact     *string    `db:"impact" json:"impact,omitempty"`
+	ActionTip  *string    `db:"action_tip" json:"action_tip,omitempty"`
 	RawCategory *string   `db:"raw_category" json:"raw_category,omitempty"`
 	AreaBefore  *string   `db:"area_before" json:"area_before,omitempty"`
 	AreaAfter   *string   `db:"area_after" json:"area_after,omitempty"`

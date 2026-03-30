@@ -16,34 +16,24 @@ import (
 
 // SummaryService 는 Claude API를 사용하여 행정 공고를 쉬운 말로 요약하는 서비스.
 //
-// 행정 용어로 작성된 공고의 사업명/분류/위치 정보를 Claude API에 전달하여
-// 일반 주민이 이해할 수 있는 쉬운 설명, 진행 단계, 관련 사례를 생성한다.
+// 공고 유형(Type)에 따라 다른 프롬프트를 사용하여 최적의 요약을 생성한다.
+// - 재개발/재건축: 사업명, 면적, 분류 기반 요약
+// - 도시계획: 고시문 전문 기반 요약 (더 풍부한 입력 → 더 좋은 요약)
+// - 기타: 범용 프롬프트
+//
+// 각 요약에는 "나한테 어떤 의미?" (impact)와 "추천 액션" (action_tip)이 포함된다.
 //
 // 핵심 원칙:
-//   - 예측하지 않는다. "집값이 오른다/내린다" 같은 예측 절대 금지.
-//   - 팩트만 요약한다. 행정 용어를 쉬운 말로 바꾸는 것이 목적.
-//   - 진행 단계를 안내한다. 전체 절차 중 어디인지 알려준다.
+//   - 예측 금지. "집값이 오른다/내린다" 절대 안 함.
+//   - 팩트만 요약. 행정 용어를 쉬운 말로 바꾸는 것이 목적.
 //   - 모르면 모른다고 한다. 관련 사례를 지어내지 않는다.
-//
-// 사용 흐름:
-//  1. 크롤러가 새 공고를 DB에 저장 (summary=NULL 상태)
-//  2. SummarizeUnsummarized()가 미요약 공고를 조회
-//  3. Claude API로 요약 생성
-//  4. DB에 summary, stage, related 업데이트
-//
-// 사용 예:
-//
-//	svc := service.NewSummaryService(apiKey, repo)
-//	count, err := svc.SummarizeUnsummarized(ctx, 10)
 type SummaryService struct {
 	client *anthropic.Client
 	repo   *repository.AnnouncementRepository
 }
 
 // NewSummaryService 는 SummaryService를 생성한다.
-//
-// apiKey가 빈 문자열이면 nil을 반환한다.
-// 이 경우 요약 기능은 비활성화되며, 크롤러는 요약 없이 공고만 저장한다.
+// apiKey가 빈 문자열이면 nil을 반환한다 (요약 기능 비활성화).
 func NewSummaryService(apiKey string, repo *repository.AnnouncementRepository) *SummaryService {
 	if apiKey == "" {
 		return nil
@@ -53,16 +43,19 @@ func NewSummaryService(apiKey string, repo *repository.AnnouncementRepository) *
 }
 
 // summaryResponse 는 Claude API 응답을 파싱하기 위한 내부 구조체.
+// 모든 유형의 프롬프트가 동일한 JSON 구조로 응답하도록 설계.
 type summaryResponse struct {
-	Summary string `json:"summary"`
-	Stage   string `json:"stage"`
-	Related string `json:"related"`
+	Summary   string `json:"summary"`    // 쉬운 설명 2~3문장
+	Stage     string `json:"stage"`      // 진행 단계
+	Related   string `json:"related"`    // 관련 사례 (없으면 빈 문자열)
+	Impact    string `json:"impact"`     // 나한테 어떤 의미?
+	ActionTip string `json:"action_tip"` // 추천 액션
 }
 
 // SummarizeUnsummarized 는 아직 AI 요약이 없는 공고들을 찾아 일괄 요약한다.
 //
-// 크롤링 후 또는 별도 배치 작업으로 호출한다.
-// 한 번에 최대 limit건을 처리하며, 개별 공고 요약 실패 시에도 나머지는 계속 진행한다.
+// 공고의 Type에 따라 적절한 프롬프트를 선택하여 요약한다.
+// 개별 공고 요약 실패 시에도 나머지는 계속 진행한다.
 func (s *SummaryService) SummarizeUnsummarized(ctx context.Context, limit int) (int, error) {
 	announcements, err := s.repo.FindUnsummarized(ctx, limit)
 	if err != nil {
@@ -84,68 +77,42 @@ func (s *SummaryService) SummarizeUnsummarized(ctx context.Context, limit int) (
 			continue
 		}
 
-		if err := s.repo.UpdateSummary(ctx, a.ID, result.Summary, result.Stage, result.Related); err != nil {
+		data := repository.SummaryData{
+			Summary:   result.Summary,
+			Stage:     result.Stage,
+			Related:   result.Related,
+			Impact:    result.Impact,
+			ActionTip: result.ActionTip,
+		}
+
+		if err := s.repo.UpdateSummary(ctx, a.ID, data); err != nil {
 			slog.Error("요약 저장 실패", "id", a.ID, "error", err)
 			continue
 		}
 
 		summarized++
-		slog.Info("요약 완료", "id", a.ID, "district", a.District, "summary", result.Summary)
+		slog.Info("요약 완료", "id", a.ID, "type", a.Type, "district", a.District, "summary", result.Summary)
 	}
 
 	return summarized, nil
 }
 
-// summarize 는 단일 공고에 대해 Claude API를 호출하여 요약을 생성한다.
-//
-// 입력 데이터 출처 (서울시 upisRebuild API):
-//   - Title: RGN_NM 사업명 (예: "은마아파트 재건축 정비구역")
-//   - Type: SCLSF에서 분류 (예: "재건축")
-//   - Action: RPT_TYPE 원본 (예: "신설")
-//   - RawCategory: LCLSF > MCLSF > SCLSF (예: "의제처리구역 > 정비구역 > 재건축사업구역")
-//   - Location: PSTN_NM (예: "강남구 대치동 316번지 일대")
+// summarize 는 공고 유형에 따라 적절한 프롬프트로 Claude API를 호출한다.
 func (s *SummaryService) summarize(ctx context.Context, a *model.Announcement) (*summaryResponse, error) {
-	location := ""
-	if a.Location != nil {
-		location = *a.Location
-	}
-	rawCategory := ""
-	if a.RawCategory != nil {
-		rawCategory = *a.RawCategory
-	}
+	var systemPrompt, userPrompt string
 
-	systemPrompt := "서울시 행정 공고를 동네 주민이 바로 이해할 수 있게 설명해줘.\n\n" +
-		"규칙:\n" +
-		"1. 해요체 사용 (\"~됐어요\", \"~이에요\").\n" +
-		"2. 2~3문장으로 핵심만. 사업명과 위치를 꼭 포함해.\n" +
-		"3. 행정 용어는 쉬운 말로. \"정비구역 지정\" → \"재건축을 공식적으로 시작할 수 있게 된 것\".\n" +
-		"4. 집값 예측 절대 금지. 팩트만 설명.\n" +
-		"5. 재개발/재건축 7단계(①기본계획 ②정비구역지정 ③조합설립 ④사업시행인가 ⑤관리처분인가 ⑥착공 ⑦입주) 중 판별 가능하면 표시. 판별 불가능하면 \"확인 필요\"라고 써.\n" +
-		"6. related는 같은 지역/비슷한 유형의 사례를 알면 쓰고, 모르면 빈 문자열 \"\". 지어내지 마.\n\n" +
-		"반드시 순수 JSON만 응답. 마크다운 코드블록이나 추가 설명 금지.\n" +
-		"{\"summary\":\"쉬운 설명 2~3문장\",\"stage\":\"N/7단계 - 단계명 또는 확인 필요\",\"related\":\"관련 사례 또는 빈 문자열\"}"
-
-	areaBefore := ""
-	if a.AreaBefore != nil && *a.AreaBefore != "0" {
-		areaBefore = *a.AreaBefore
+	switch a.Type {
+	case "재개발", "재건축", "정비사업":
+		systemPrompt, userPrompt = s.buildRebuildPrompt(a)
+	case "도시계획":
+		systemPrompt, userPrompt = s.buildCityplanPrompt(a)
+	default:
+		systemPrompt, userPrompt = s.buildGeneralPrompt(a)
 	}
-	areaAfter := ""
-	if a.AreaAfter != nil && *a.AreaAfter != "0" {
-		areaAfter = *a.AreaAfter
-	}
-
-	areaInfo := ""
-	if areaBefore != "" || areaAfter != "" {
-		areaInfo = fmt.Sprintf("\n면적(㎡): 기존 %s → 변경 후 %s", areaBefore, areaAfter)
-	}
-
-	userPrompt := fmt.Sprintf("다음 행정 공고를 쉽게 설명해주세요:\n\n"+
-		"구: %s\n사업명: %s\n유형: %s\n조치: %s\n분류: %s\n위치: %s%s",
-		a.District, a.Title, a.Type, a.Action, rawCategory, location, areaInfo)
 
 	message, err := s.client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model:     anthropic.ModelClaudeHaiku4_5,
-		MaxTokens: 500,
+		MaxTokens: 700,
 		System: []anthropic.TextBlockParam{
 			{Text: systemPrompt},
 		},
@@ -168,13 +135,98 @@ func (s *SummaryService) summarize(ctx context.Context, a *model.Announcement) (
 	if err := json.Unmarshal([]byte(cleaned), &result); err != nil {
 		slog.Warn("JSON 파싱 실패, 원본 텍스트 사용", "id", a.ID, "response", responseText)
 		result = summaryResponse{
-			Summary: responseText,
-			Stage:   "분류 불가",
-			Related: "",
+			Summary:   responseText,
+			Stage:     "확인 필요",
+			Related:   "",
+			Impact:    "",
+			ActionTip: "",
 		}
 	}
 
 	return &result, nil
+}
+
+// buildRebuildPrompt 는 재개발/재건축/정비사업 공고용 프롬프트를 생성한다.
+//
+// 입력: 사업명, 위치, 면적, 분류 (짧은 데이터)
+// 7단계: ①기본계획 ②정비구역지정 ③조합설립 ④사업시행인가 ⑤관리처분인가 ⑥착공 ⑦입주
+func (s *SummaryService) buildRebuildPrompt(a *model.Announcement) (string, string) {
+	system := "서울시 재개발/재건축 공고를 동네 주민이 바로 이해할 수 있게 설명해줘.\n\n" +
+		"규칙:\n" +
+		"1. 해요체 사용.\n" +
+		"2. summary: 2~3문장. 사업명과 위치를 꼭 포함. 행정 용어는 쉬운 말로.\n" +
+		"3. stage: 재개발/재건축 7단계(①기본계획 ②정비구역지정 ③조합설립 ④사업시행인가 ⑤관리처분인가 ⑥착공 ⑦입주) 중 판별 가능하면 \"N/7단계 - 단계명\". 불가능하면 \"확인 필요\".\n" +
+		"4. impact: 이 근처 거주자에게 어떤 의미인지 1문장. 예측 금지, 팩트만.\n" +
+		"5. action_tip: 주민이 할 수 있는 행동 1문장. 구체적으로.\n" +
+		"6. related: 같은 지역의 관련 사례를 알면 쓰고, 모르면 빈 문자열. 지어내지 마.\n" +
+		"7. 집값 예측 절대 금지.\n\n" +
+		"순수 JSON만 응답. 마크다운/추가설명 금지.\n" +
+		"{\"summary\":\"\",\"stage\":\"\",\"impact\":\"\",\"action_tip\":\"\",\"related\":\"\"}"
+
+	location := ptrOr(a.Location, "")
+	rawCategory := ptrOr(a.RawCategory, "")
+	areaBefore := ptrOr(a.AreaBefore, "")
+	areaAfter := ptrOr(a.AreaAfter, "")
+
+	areaInfo := ""
+	if areaBefore != "" || areaAfter != "" {
+		areaInfo = fmt.Sprintf("\n면적(㎡): 기존 %s → 변경 후 %s", areaBefore, areaAfter)
+	}
+
+	user := fmt.Sprintf("구: %s\n사업명: %s\n유형: %s\n조치: %s\n분류: %s\n위치: %s%s",
+		a.District, a.Title, a.Type, a.Action, rawCategory, location, areaInfo)
+
+	return system, user
+}
+
+// buildCityplanPrompt 는 도시계획 결정고시 공고용 프롬프트를 생성한다.
+//
+// 입력: 고시문 전문 (summary에 임시 저장된 CN 텍스트, 수천 자)
+// 5단계: ①입안 ②주민열람 ③위원회심의 ④결정고시 ⑤지형도면고시
+func (s *SummaryService) buildCityplanPrompt(a *model.Announcement) (string, string) {
+	system := "서울시 도시계획 결정고시를 동네 주민이 바로 이해할 수 있게 설명해줘.\n\n" +
+		"규칙:\n" +
+		"1. 해요체 사용.\n" +
+		"2. summary: 2~3문장. 뭘 하겠다는 건지, 어디서, 주민에게 어떤 의미인지 핵심만. 법령 인용/고시번호는 전부 생략.\n" +
+		"3. stage: 도시계획 5단계(①입안 ②주민열람/공고 ③위원회심의 ④결정고시 ⑤지형도면고시) 중 판별 가능하면 \"N/5단계 - 단계명\". 불가능하면 \"확인 필요\".\n" +
+		"4. impact: 이 근처 거주자/상인에게 어떤 영향이 있는지 1문장. 예측 금지, 팩트만.\n" +
+		"5. action_tip: 주민이 할 수 있는 행동 1문장. 열람/의견제출 기간이 있으면 꼭 언급.\n" +
+		"6. related: 같은 지역의 관련 사례를 알면 쓰고, 모르면 빈 문자열. 지어내지 마.\n" +
+		"7. 집값 예측 절대 금지. 법률 조항 인용 금지. 고시번호 언급 금지.\n\n" +
+		"순수 JSON만 응답. 마크다운/추가설명 금지.\n" +
+		"{\"summary\":\"\",\"stage\":\"\",\"impact\":\"\",\"action_tip\":\"\",\"related\":\"\"}"
+
+	// 도시계획은 summary에 고시문 전문이 임시 저장되어 있음
+	content := ptrOr(a.Summary, "")
+	if len(content) > 3000 {
+		content = content[:3000] + "..."
+	}
+
+	user := fmt.Sprintf("구: %s\n제목: %s\n고시유형: %s\n\n[고시문 전문]\n%s",
+		a.District, a.Title, a.Action, content)
+
+	return system, user
+}
+
+// buildGeneralPrompt 는 기타 유형의 공고용 범용 프롬프트를 생성한다.
+// 추후 교통, 교육 등 새 장르 추가 시 장르별 프롬프트를 만들기 전 임시로 사용.
+func (s *SummaryService) buildGeneralPrompt(a *model.Announcement) (string, string) {
+	system := "서울시 행정 공고를 동네 주민이 바로 이해할 수 있게 설명해줘.\n\n" +
+		"규칙:\n" +
+		"1. 해요체 사용.\n" +
+		"2. summary: 2~3문장 핵심 요약. 행정 용어는 쉬운 말로.\n" +
+		"3. stage: 진행 단계를 알 수 있으면 표시, 모르면 \"확인 필요\".\n" +
+		"4. impact: 주민에게 어떤 의미인지 1문장.\n" +
+		"5. action_tip: 주민이 할 수 있는 행동 1문장.\n" +
+		"6. related: 관련 사례. 모르면 빈 문자열.\n" +
+		"7. 집값 예측 절대 금지.\n\n" +
+		"순수 JSON만 응답.\n" +
+		"{\"summary\":\"\",\"stage\":\"\",\"impact\":\"\",\"action_tip\":\"\",\"related\":\"\"}"
+
+	user := fmt.Sprintf("구: %s\n제목: %s\n유형: %s\n조치: %s",
+		a.District, a.Title, a.Type, a.Action)
+
+	return system, user
 }
 
 // cleanJSON 은 Claude 응답에서 마크다운 코드블록과 추가 텍스트를 제거하고
@@ -199,6 +251,14 @@ func cleanJSON(s string) string {
 	return strings.TrimSpace(s)
 }
 
+// ptrOr 은 포인터가 nil이면 기본값을, 아니면 값을 반환한다.
+func ptrOr(p *string, defaultVal string) string {
+	if p == nil {
+		return defaultVal
+	}
+	return *p
+}
+
 // SummarizeOne 은 단일 공고에 대해 요약을 생성하고 DB에 저장한다.
 func (s *SummaryService) SummarizeOne(ctx context.Context, id string) error {
 	a, err := s.repo.FindByID(ctx, id)
@@ -211,5 +271,11 @@ func (s *SummaryService) SummarizeOne(ctx context.Context, id string) error {
 		return err
 	}
 
-	return s.repo.UpdateSummary(ctx, id, result.Summary, result.Stage, result.Related)
+	return s.repo.UpdateSummary(ctx, id, repository.SummaryData{
+		Summary:   result.Summary,
+		Stage:     result.Stage,
+		Related:   result.Related,
+		Impact:    result.Impact,
+		ActionTip: result.ActionTip,
+	})
 }

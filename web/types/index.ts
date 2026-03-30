@@ -9,6 +9,8 @@ export interface Announcement {
   summary?: string;        // AI 쉬운 설명
   stage?: string;          // 진행 단계 (예: "2/7단계 - 정비구역지정")
   related?: string;        // 관련 사례
+  impact?: string;         // "나한테 어떤 의미?"
+  action_tip?: string;     // "추천 액션"
   raw_category?: string;   // 원본 분류 (대>중>소)
   area_before?: string;    // 기존 면적(㎡)
   area_after?: string;     // 변경 후 면적(㎡)

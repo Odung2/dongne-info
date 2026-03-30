@@ -67,6 +67,24 @@ export default async function MapoDetailPage({ params }: PageProps) {
         </section>
       )}
 
+      {/* 나한테 어떤 의미? + 추천 액션 */}
+      {(a.impact || a.action_tip) && (
+        <section className="mb-4 bg-blue-50 rounded-lg p-4">
+          {a.impact && (
+            <div className="mb-2">
+              <h3 className="text-sm font-semibold text-blue-700 mb-1">나한테 어떤 의미?</h3>
+              <p className="text-sm text-blue-600">{a.impact}</p>
+            </div>
+          )}
+          {a.action_tip && (
+            <div>
+              <h3 className="text-sm font-semibold text-blue-700 mb-1">이런 걸 해볼 수 있어요</h3>
+              <p className="text-sm text-blue-600">{a.action_tip}</p>
+            </div>
+          )}
+        </section>
+      )}
+
       <StageBar stage={a.stage} />
       <AreaChange before={a.area_before} after={a.area_after} />
 
