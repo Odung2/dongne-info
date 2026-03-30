@@ -7,7 +7,8 @@ const TYPE_COLORS: Record<string, string> = {
   "재개발": "bg-blue-100 text-blue-700",
   "재건축": "bg-green-100 text-green-700",
   "도시계획": "bg-purple-100 text-purple-700",
-  "정비사업": "bg-gray-100 text-gray-700",
+  "도심 재개발": "bg-cyan-100 text-cyan-700",
+  "주거환경개선": "bg-orange-100 text-orange-700",
 };
 
 const ACTION_COLORS: Record<string, string> = {
@@ -21,7 +22,8 @@ const TYPE_TOOLTIPS: Record<string, string> = {
   "재개발": "낡은 주거지역을 밀고 새로 짓는 사업이에요",
   "재건축": "기존 아파트를 허물고 새 아파트를 짓는 사업이에요",
   "도시계획": "도로, 공원, 용도지역 등 도시 계획을 변경하는 거예요",
-  "정비사업": "낡은 도심 상업지역을 정비하는 사업이에요",
+  "도심 재개발": "낡은 도심 상업지역을 밀고 새로 짓는 사업이에요",
+  "주거환경개선": "노후 주거지의 생활환경을 개선하는 사업이에요",
 };
 
 const ACTION_TOOLTIPS: Record<string, string> = {

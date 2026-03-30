@@ -8,7 +8,7 @@ interface Props {
   announcements: Announcement[];
 }
 
-const FILTER_TABS = ["전체", "재개발", "재건축", "도시계획"];
+const FILTER_TABS = ["전체", "재개발", "재건축", "도심 재개발", "도시계획"];
 
 /**
  * AnnouncementList — 공고 목록 + 유형 필터 탭.

@@ -205,14 +205,26 @@ func (c *RebuildCrawler) fetchFromAPI(district string) ([]xmlRow, error) {
 //   - "재건축사업구역", "주택재건축사업" → "재건축"
 //   - "재개발사업구역", "주택재개발사업" → "재개발"
 //   - 그 외 → "정비사업"
+// classifyType 은 서울시 API의 SCLSF(소분류) 필드를 분석해서
+// "재개발", "재건축", "도심 재개발" 등으로 분류한다.
+//
+// 소분류 예시:
+//   - "재건축사업구역", "주택재건축사업" → "재건축"
+//   - "주택재개발사업구역" → "재개발"
+//   - "도시환경정비사업구역" → "도심 재개발" (상업지역 재개발과 유사)
+//   - "주거환경개선사업구역" → "주거환경개선"
 func classifyType(sclsf string) string {
 	switch {
 	case contains(sclsf, "재건축"):
 		return "재건축"
 	case contains(sclsf, "재개발"):
 		return "재개발"
+	case contains(sclsf, "도시환경정비"):
+		return "도심 재개발"
+	case contains(sclsf, "주거환경개선"):
+		return "주거환경개선"
 	default:
-		return "정비사업"
+		return "재개발"
 	}
 }
 
