@@ -25,6 +25,7 @@ import (
 //   - SeoulAPIKey: 서울시 열린데이터광장 API 인증키 (필수)
 //   - AnthropicKey: Claude API 키. 공고 AI 요약에 사용 (선택, 없으면 요약 건너뜀)
 //   - KakaoAPIKey: 카카오 알림톡 API 키 (선택, 없으면 알림 건너뜀)
+//   - ResendAPIKey: Resend 이메일 발송 API 키 (선택, 없으면 이메일 알림 건너뜀)
 //   - Environment: 실행 환경. "development" 또는 "production" (기본값 "development")
 type Config struct {
 	Port         string `env:"PORT" envDefault:"8080"`
@@ -32,6 +33,7 @@ type Config struct {
 	SeoulAPIKey  string `env:"SEOUL_API_KEY,required"`
 	AnthropicKey string `env:"ANTHROPIC_API_KEY"`
 	KakaoAPIKey  string `env:"KAKAO_API_KEY"`
+	ResendAPIKey string `env:"RESEND_API_KEY"`
 	Environment  string `env:"ENVIRONMENT" envDefault:"development"`
 }
 

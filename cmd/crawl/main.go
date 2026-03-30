@@ -88,9 +88,13 @@ func main() {
 	}
 	slog.Info("AI 요약 완료", "summarized_count", summarized)
 
-	// 3단계: 알림 발송
+	// 3단계: 알림 발송 (RESEND_API_KEY가 있을 때 이메일 발송)
 	subscriberRepo := repository.NewSubscriberRepository(db)
-	notificationSvc := service.NewNotificationService(subscriberRepo, repo)
+	emailSvc := service.NewEmailService(cfg.ResendAPIKey)
+	if emailSvc == nil {
+		slog.Warn("RESEND_API_KEY 미설정, 이메일 발송 건너뜀")
+	}
+	notificationSvc := service.NewNotificationService(subscriberRepo, repo, emailSvc)
 	notifiedCount, err := notificationSvc.NotifyNewAnnouncements(ctx)
 	if err != nil {
 		slog.Error("알림 발송 실패", "error", err)
