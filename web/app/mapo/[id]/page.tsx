@@ -13,6 +13,7 @@ import StageBar from "@/components/announcement/StageBar";
 import AreaChange from "@/components/announcement/AreaChange";
 import SourceLink from "@/components/announcement/SourceLink";
 import InterestButton from "@/components/reaction/InterestButton";
+import KakaoShare from "@/components/share/KakaoShare";
 import SubscribeForm from "@/components/subscribe/SubscribeForm";
 
 interface PageProps {
@@ -91,10 +92,17 @@ export default async function MapoDetailPage({ params }: PageProps) {
 
       <hr className="my-4 border-gray-200" />
 
-      <InterestButton
-        announcementId={a.id}
-        initialCount={reactions.interest}
-      />
+      <div className="space-y-3">
+        <InterestButton
+          announcementId={a.id}
+          initialCount={reactions.interest}
+        />
+        <KakaoShare
+          title={a.title}
+          summary={a.summary || ""}
+          url={`/mapo/${a.id}`}
+        />
+      </div>
 
       <div className="mt-4 space-y-2 text-xs text-gray-400">
         {a.raw_category && <p>분류: {a.raw_category}</p>}

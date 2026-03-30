@@ -13,6 +13,7 @@ import SourceLink from "@/components/announcement/SourceLink";
 import StageBar from "@/components/announcement/StageBar";
 import AreaChange from "@/components/announcement/AreaChange";
 import InterestButton from "@/components/reaction/InterestButton";
+import KakaoShare from "@/components/share/KakaoShare";
 import SubscribeForm from "@/components/subscribe/SubscribeForm";
 
 interface PageProps {
@@ -98,11 +99,18 @@ export default async function GangnamDetailPage({ params }: PageProps) {
 
       <hr className="my-4 border-gray-200" />
 
-      {/* 관심 버튼 */}
-      <InterestButton
-        announcementId={a.id}
-        initialCount={reactions.interest}
-      />
+      {/* 관심 버튼 + 카카오 공유 */}
+      <div className="space-y-3">
+        <InterestButton
+          announcementId={a.id}
+          initialCount={reactions.interest}
+        />
+        <KakaoShare
+          title={a.title}
+          summary={a.summary || ""}
+          url={`/gangnam/${a.id}`}
+        />
+      </div>
 
       {/* 원문/분류 */}
       <div className="mt-4 space-y-2 text-xs text-gray-400">
