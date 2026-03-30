@@ -23,10 +23,10 @@ export default async function HomePage() {
       {/* 서비스 소개 */}
       <section className="text-center mb-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          우리 동네 소식, 곰고가 알려줘요 🐻
+          우리 동네 소식, 동깨가 알려줘요
         </h1>
         <p className="text-gray-500 text-sm">
-          재개발 · 재건축 · 도시계획 소식을 곰고가 쉽게 알려줘요
+          재개발 · 재건축 · 도시계획 소식을 동깨가 쉽게 알려줘요
         </p>
       </section>
 

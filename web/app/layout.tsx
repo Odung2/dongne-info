@@ -4,9 +4,9 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
-  title: "곰고 — 우리 동네 소식, 쉽게 알려줘요 🐻",
+  title: "동깨 — 우리 동네 소식, 쉽게 알려줘요",
   description:
-    "우리 동네 재개발·재건축·도시계획 소식을 곰고가 쉽게 알려줘요.",
+    "우리 동네 재개발·재건축·도시계획 소식을 동깨가 쉽게 알려줘요.",
 };
 
 export default function RootLayout({

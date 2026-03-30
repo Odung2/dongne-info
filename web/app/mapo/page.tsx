@@ -10,8 +10,8 @@ import AnnouncementList from "@/components/announcement/AnnouncementList";
 import SubscribeForm from "@/components/subscribe/SubscribeForm";
 
 export const metadata: Metadata = {
-  title: "마포구 공고 — 곰고",
-  description: "마포구 재개발·재건축·도시계획 소식을 곰고가 쉽게 알려줘요.",
+  title: "마포구 공고 — 동깨",
+  description: "마포구 재개발·재건축·도시계획 소식을 동깨가 쉽게 알려줘요.",
 };
 
 export default async function MapoPage() {
