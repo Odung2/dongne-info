@@ -40,9 +40,14 @@ export default function AnnouncementCard({ announcement: a, interestCount }: Pro
           </p>
         )}
 
-        {/* 하단: 단계 + 관심 수 */}
+        {/* 하단: 날짜 + 단계 + 관심 수 */}
         <div className="flex items-center justify-between text-xs text-gray-400">
-          {a.stage && <span>{a.stage}</span>}
+          <div className="flex items-center gap-2">
+            <time dateTime={a.created_at}>
+              {new Date(a.created_at).toLocaleDateString("ko-KR")}
+            </time>
+            {a.stage && <span>· {a.stage}</span>}
+          </div>
           {interestCount !== undefined && interestCount > 0 && (
             <span>관심 {interestCount}명</span>
           )}
