@@ -114,13 +114,13 @@ func (r *AnnouncementRepository) FindByFilter(ctx context.Context, filter model.
 // source_id가 중복이면 DB UNIQUE 제약에 의해 에러가 발생한다.
 func (r *AnnouncementRepository) Create(ctx context.Context, a *model.Announcement) error {
 	query := `
-		INSERT INTO announcements (district, type, action, title, location, summary, stage, related, raw_category, area_before, area_after, source_url, source_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		INSERT INTO announcements (district, type, action, title, location, summary, stage, related, raw_category, area_before, area_after, announced_at, source_url, source_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		RETURNING id, created_at`
 	return r.db.QueryRowContext(ctx, query,
 		a.District, a.Type, a.Action, a.Title, a.Location,
 		a.Summary, a.Stage, a.Related, a.RawCategory,
-		a.AreaBefore, a.AreaAfter, a.SourceURL, a.SourceID,
+		a.AreaBefore, a.AreaAfter, a.AnnouncedAt, a.SourceURL, a.SourceID,
 	).Scan(&a.ID, &a.CreatedAt)
 }
 

@@ -26,6 +26,7 @@ import (
 //   - AreaBefore: 기존 면적(㎡). API의 AREA_EXS (예: "179794.9", 신설이면 "0")
 //   - AreaAfter: 변경 후 면적(㎡). API의 AREA_CHG_AFTR (예: "181501.5")
 //   - SourceURL: 원본 공고 링크 (추후 결정고시 연동 시 사용)
+//   - AnnouncedAt: 실제 고시/공고 날짜. API에서 추출. (nil이면 날짜 불명)
 //   - SourceID: 중복 방지용 원본 식별자 (예: "rebuild_강남구_11680PPL202501090004")
 //   - NotifiedAt: 구독자에게 알림 발송한 시각 (nil이면 아직 미발송)
 type Announcement struct {
@@ -44,6 +45,7 @@ type Announcement struct {
 	RawCategory *string   `db:"raw_category" json:"raw_category,omitempty"`
 	AreaBefore  *string   `db:"area_before" json:"area_before,omitempty"`
 	AreaAfter   *string   `db:"area_after" json:"area_after,omitempty"`
+	AnnouncedAt *time.Time `db:"announced_at" json:"announced_at,omitempty"`
 	SourceURL   *string   `db:"source_url" json:"source_url,omitempty"`
 	SourceID    *string   `db:"source_id" json:"source_id,omitempty"`
 	CreatedAt  time.Time  `db:"created_at" json:"created_at"`

@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"dongne-info/model"
 	"dongne-info/repository"
@@ -120,12 +121,21 @@ func (c *CityplanCrawler) Crawl(ctx context.Context, districts []string) (int, e
 			content = content[:2000] + "..."
 		}
 
+		// 고시일자 파싱 (형식: "2026-03-18T00:00:00.000")
+		var announcedAt *time.Time
+		if len(row.AncmntYMD) >= 10 {
+			if t, err := time.Parse("2006-01-02", row.AncmntYMD[:10]); err == nil {
+				announcedAt = &t
+			}
+		}
+
 		announcement := &model.Announcement{
 			District:    district,
 			Type:        "도시계획",
 			Action:      row.AncmntType,
 			Title:       row.TTL,
-			Summary:     strPtr(content), // 고시문 전문을 임시로 summary에 저장, AI 요약 시 교체
+			Summary:     strPtr(content),
+			AnnouncedAt: announcedAt,
 			RawCategory: strPtr(fmt.Sprintf("고시번호: %s | 고시일: %s", row.AncmntNo, row.AncmntYMD[:10])),
 			SourceID:    strPtr(sourceID),
 		}

@@ -15,8 +15,9 @@ export interface Announcement {
   raw_category?: string;   // 원본 분류 (대>중>소)
   area_before?: string;    // 기존 면적(㎡)
   area_after?: string;     // 변경 후 면적(㎡)
+  announced_at?: string;   // 실제 고시/공고 날짜
   source_url?: string;     // 원문 링크
-  created_at: string;      // ISO 8601
+  created_at: string;      // DB 저장 시각
 }
 
 /** 반응 집계 */

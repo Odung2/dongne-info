@@ -21,6 +21,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"dongne-info/model"
 	"dongne-info/repository"
@@ -138,12 +139,14 @@ func (c *RebuildCrawler) Crawl(ctx context.Context, district string) (int, error
 			title = fmt.Sprintf("%s %s %s", row.Mclsf, row.Sclsf, row.RptType)
 		}
 
-		// 결정고시 코드가 있으면 정비사업 정보몽땅 검색 URL로 저장
-		// 추후 원문 직접 링크가 확인되면 교체 예정
+		// 결정고시 코드에서 고시일자 추출
+		// 코드 형식: 11680NTC202303030002 → 20230303 → 2023-03-03
 		var sourceURL *string
+		var announcedAt *time.Time
 		if row.DcsnCode != "" {
 			url := fmt.Sprintf("https://cleanup.seoul.go.kr/search/searchList.do?searchText=%s", row.DcsnCode)
 			sourceURL = &url
+			announcedAt = parseDateFromCode(row.DcsnCode)
 		}
 
 		announcement := &model.Announcement{
@@ -152,6 +155,7 @@ func (c *RebuildCrawler) Crawl(ctx context.Context, district string) (int, error
 			Action:      row.RptType,
 			Title:       title,
 			Location:    strPtr(row.PstnNm),
+			AnnouncedAt: announcedAt,
 			SourceURL:   sourceURL,
 			SourceID:    strPtr(sourceID),
 			RawCategory: strPtr(fmt.Sprintf("%s > %s > %s", row.Lclsf, row.Mclsf, row.Sclsf)),
@@ -259,6 +263,34 @@ func contains(s string, substrs ...string) bool {
 		}
 	}
 	return false
+}
+
+// parseDateFromCode 는 결정고시 관리코드에서 날짜를 추출한다.
+//
+// 코드 형식: 11680NTC202303030002
+//
+//	"NTC" 뒤의 8자리가 날짜 (YYYYMMDD)
+//
+// 파싱 실패 시 nil을 반환한다.
+func parseDateFromCode(code string) *time.Time {
+	// "NTC" 위치 찾기
+	idx := -1
+	for i := range code {
+		if i+3 <= len(code) && code[i:i+3] == "NTC" {
+			idx = i + 3
+			break
+		}
+	}
+	if idx == -1 || idx+8 > len(code) {
+		return nil
+	}
+
+	dateStr := code[idx : idx+8] // "20230303"
+	t, err := time.Parse("20060102", dateStr)
+	if err != nil {
+		return nil
+	}
+	return &t
 }
 
 // strPtr 는 빈 문자열이면 nil, 아니면 문자열 포인터를 반환한다.
